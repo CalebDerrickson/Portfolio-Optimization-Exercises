@@ -31,9 +31,10 @@ def get_data(stock_names: list[str] | str = "") -> dict[str, pd.DataFrame]:
 
     return res
 
+STOCK_DATA = get_data()
 
 def Exercise_1():
-    data: pd.DataFrame = get_data("APPL").get("APPL")[["Date", "Close/Last"]]
+    data: pd.DataFrame = STOCK_DATA.get("APPL")[["Date", "Close/Last"]]
     dates: np.ndarray = np.array([datetime.datetime.strptime(date, "%m/%d/%Y") for date in data["Date"].to_numpy()])
     stock_data: np.ndarray = pd.to_numeric(data["Close/Last"].str.removeprefix("$")).to_numpy()
     
@@ -52,9 +53,68 @@ def Exercise_1():
     ax2.xaxis.set_major_locator(matplotlib.dates.YearLocator())
     fig.savefig("Chapter2/Plots/APPL Closing Price Exercise 2.1.png")
 
+def Exercise_2():
+    data: pd.DataFrame = STOCK_DATA.get("APPL")[["Date", "Close/Last"]]
+    dates: np.ndarray = np.array([datetime.datetime.strptime(date, "%m/%d/%Y") for date in data["Date"].to_numpy()])
+    stock_data: np.ndarray = pd.to_numeric(data["Close/Last"].str.removeprefix("$")).to_numpy()
+
+    linear_return: np.ndarray = np.true_divide(stock_data[1:], stock_data[:-1]) - 1
+    log_linear_return: np.ndarray = np.log(1 + linear_return)
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, layout="constrained")
+    ax1.plot(dates[1:], linear_return)
+    ax1.set(title="Linear Return APPL")
+    ax1.grid()
+    ax1.grid(which="minor", color="0.9")
+    ax1.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+
+    ax2.plot(dates[1:], log_linear_return)
+    ax2.set(title="Log Return APPL")
+    ax2.grid()
+    ax2.grid(which="minor", color="0.9")
+    ax2.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
+    ax2.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+    fig.savefig("Chapter2/Plots/APPL Returns Exercise 2.2.png")
+
+def Exercise_3():
+    data: pd.DataFrame = STOCK_DATA.get("APPL")[["Date", "Close/Last"]]
+    dates: np.ndarray = np.array([datetime.datetime.strptime(date, "%m/%d/%Y") for date in data["Date"].to_numpy()])
+    stock_data: np.ndarray = pd.to_numeric(data["Close/Last"].str.removeprefix("$")).to_numpy()
+
+    def get_volatility_left_align(stock_data: np.ndarray, k: int = 10):
+        squared_return: np.ndarray = np.square(np.true_divide(stock_data[1:], stock_data[:-1]) - 1)
+        volatility: np.ndarray = np.array([np.mean(squared_return[i:i+k]) for i in range(len(squared_return) - k)])
+        return np.sqrt(volatility)
+
+    def get_volatility_centered_window(stock_data: np.ndarray, k: int = 10):
+        squared_return: np.ndarray = np.square(np.true_divide(stock_data[1:], stock_data[:-1]) - 1)
+        volatility: np.ndarray = np.array([np.mean(squared_return[t - int(k / 2) : t + int(k / 2)]) for t in range(int(k/2), len(squared_return)+int(k/2))])
+        return np.sqrt(volatility)
+    
+    for k in [2, 4, 6, 8, 10, 20]:
+        left_volatility = get_volatility_left_align(stock_data, k)
+        centered_volatility = get_volatility_centered_window(stock_data, k)
+        fig, (ax1, ax2) = plt.subplots(2, 1, layout="constrained")
+        ax1.plot(dates[:len(left_volatility)], left_volatility)
+        ax1.set(title="Left Aligned Volatility APPL")
+        ax1.grid()
+        ax1.grid(which="minor", color="0.9")
+        ax1.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+
+        ax2.plot(dates[:len(centered_volatility)], centered_volatility)
+        ax2.set(title="Centered Volatility APPL")
+        ax2.grid()
+        ax2.grid(which="minor", color="0.9")
+        ax2.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
+        ax2.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+        fig.savefig(f"Chapter2/Plots/APPL Volatilities k = {k} 2.3.png")
 
 def main():
-    exercises: list[Callable] = [Exercise_1]
+    exercises: list[Callable] = [
+        Exercise_1,
+        Exercise_2,
+        Exercise_3
+        ]
     for exercise in exercises:
         print(exercise.__name__)
         exercise()
