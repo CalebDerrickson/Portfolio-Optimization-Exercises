@@ -174,6 +174,51 @@ def Exercise_4():
         print(f"Part {part}")
         part_func()
 
+def Exercise_5():
+    data: pd.DataFrame = STOCK_DATA.get("APPL")[["Date", "Close/Last"]]
+    dates: np.ndarray = np.array([datetime.datetime.strptime(date, "%m/%d/%Y") for date in data["Date"].to_numpy()])
+    stock_data: np.ndarray = pd.to_numeric(data["Close/Last"].str.removeprefix("$")).to_numpy()
+    
+    def autocorr(x):
+        result = np.correlate(x, x, mode='full')
+        return result[result.size // 2:]
+
+    def part_a():
+        intervals = [i * 5 for i in range(1, 7)]
+        fig, axs = plt.subplots(2, 3, figsize=(14, 10))
+        for i, interval in enumerate(intervals):
+            row = i // 3
+            column = i % 3
+            interval_stock_data = np.array([stock_data[j] for j in range(0, len(stock_data), interval)])
+            interval_dates = np.array([dates[j] for j in range(0, len(dates), interval)])
+            stock_log_returns = np.log(interval_stock_data[1:] / interval_stock_data[:-1]) 
+            axs[row, column].plot(interval_dates[1:], autocorr(stock_log_returns))
+            axs[row, column].set(title=f"Interval (Days) = {interval}")
+        fig.savefig(f"Chapter2/Plots/APPL Intervals 2.5a.png")
+
+    def part_b():
+        intervals = [i * 5 for i in range(1, 7)]
+        fig, axs = plt.subplots(2, 3, figsize=(14, 10))
+        for i, interval in enumerate(intervals):
+            row = i // 3
+            column = i % 3
+            interval_stock_data = np.array([stock_data[j] for j in range(0, len(stock_data), interval)])
+            interval_dates = np.array([dates[j] for j in range(0, len(dates), interval)])
+            stock_squared_returns = np.square(interval_stock_data[1:] / interval_stock_data[:-1]) 
+            axs[row, column].plot(interval_dates[1:], autocorr(stock_squared_returns))
+            axs[row, column].set(title=f"Interval (Days) = {interval}")
+
+        fig.savefig(f"Chapter2/Plots/APPL Intervals 2.5b.png")
+
+    parts: dict[str, Callable] = {
+        "a": part_a,
+        "b": part_b,
+    }
+
+    for part, part_func in parts.items():
+        print(f"Part {part}")
+        part_func()
+
 
 
 
@@ -182,7 +227,8 @@ EXERCISES: dict[str, Callable] = {
         "Exercise_1": Exercise_1,
         "Exercise_2": Exercise_2,
         "Exercise_3": Exercise_3,
-        "Exercise_4": Exercise_4
+        "Exercise_4": Exercise_4,
+        "Exercise_5": Exercise_5
     }
 
 
