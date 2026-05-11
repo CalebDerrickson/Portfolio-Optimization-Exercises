@@ -5,7 +5,9 @@ from pathlib import Path
 import matplotlib
 from typing import Callable
 import datetime
+from utils import input_utils
 import matplotlib.ticker as mticker
+from scipy import stats
 
 PATH_TO_STORED_DATA: list[Path] = list((Path().cwd().resolve() / "Historical Data").glob("*.csv"))
 STORED_DATA_NAMES = [data_path.name.split(" ")[0] for data_path in PATH_TO_STORED_DATA]
@@ -109,13 +111,85 @@ def Exercise_3():
         ax2.xaxis.set_major_locator(matplotlib.dates.YearLocator())
         fig.savefig(f"Chapter2/Plots/APPL Volatilities k = {k} 2.3.png")
 
+def Exercise_4():
+    data: pd.DataFrame = STOCK_DATA.get("APPL")[["Date", "Close/Last"]]
+    dates: np.ndarray = np.array([datetime.datetime.strptime(date, "%m/%d/%Y") for date in data["Date"].to_numpy()])
+    stock_data: np.ndarray = pd.to_numeric(data["Close/Last"].str.removeprefix("$")).to_numpy()
+    
+    def part_a():
+        intervals = [i * 5 for i in range(1, 7)]
+        fig, axs = plt.subplots(2, 3, figsize=(12, 8))
+        for i, interval in enumerate(intervals):
+            row = i // 3
+            column = i % 3
+            interval_stock_data = np.array([stock_data[j] for j in range(0, len(stock_data), interval)])
+            stock_log_returns = np.log(interval_stock_data[1:] / interval_stock_data[:-1]) 
+            interval_dates = [dates[j] for j in range(0, len(stock_data), interval)]
+            axs[row, column].plot(interval_dates[1:], stock_log_returns)
+            axs[row, column].set(title=f"Interval (Days) = {interval}")
+            
+        fig.savefig(f"Chapter2/Plots/APPL Intervals 2.4a.png")
+
+
+    def part_b():
+        intervals = [i * 5 for i in range(1, 7)]
+        fig, axs = plt.subplots(2, 3, figsize=(14, 10))
+        for i, interval in enumerate(intervals):
+            row = i // 3
+            column = i % 3
+            interval_stock_data = np.array([stock_data[j] for j in range(0, len(stock_data), interval)])
+            stock_log_returns = np.log(interval_stock_data[1:] / interval_stock_data[:-1]) 
+            stats.probplot(stock_log_returns, plot=axs[row, column])
+            axs[row, column].set(title=f"Interval (Days) = {interval}")
+        fig.savefig(f"Chapter2/Plots/APPL Intervals 2.4b.png")
+
+    def part_c():
+        intervals = [i for i in range(1, 30)]
+        fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+        skewnesses = np.zeros(len(intervals))
+        for i, interval in enumerate(intervals):
+            interval_stock_data = np.array([stock_data[j] for j in range(0, len(stock_data), interval)])
+            stock_log_returns = np.log(interval_stock_data[1:] / interval_stock_data[:-1]) 
+            skewnesses[i] = stats.skew(stock_log_returns)
+        axs[0].plot(intervals, skewnesses)
+        axs[0].set(title=f"Skewness")
+
+        kurtoses = np.zeros(len(intervals))
+        for i, interval in enumerate(intervals):
+            interval_stock_data = np.array([stock_data[j] for j in range(0, len(stock_data), interval)])
+            stock_log_returns = np.log(interval_stock_data[1:] / interval_stock_data[:-1]) 
+            kurtoses[i] = stats.kurtosis(stock_log_returns)
+        axs[1].plot(intervals, kurtoses)
+        axs[1].set(title=f"Kurtosis")
+
+        fig.savefig(f"Chapter2/Plots/APPL Intervals 2.4c.png")
+
+    parts: dict[str, Callable] = {
+        "a": part_a,
+        "b": part_b,
+        "c": part_c
+    }
+
+    for part, part_func in parts.items():
+        print(f"Part {part}")
+        part_func()
+
+
+
+
+
+EXERCISES: dict[str, Callable] = {
+        "Exercise_1": Exercise_1,
+        "Exercise_2": Exercise_2,
+        "Exercise_3": Exercise_3,
+        "Exercise_4": Exercise_4
+    }
+
+
 def main():
-    exercises: list[Callable] = [
-        Exercise_1,
-        Exercise_2,
-        Exercise_3
-        ]
-    for exercise in exercises:
+    chosen_exercises: list[Callable] = input_utils.select_from_list(list(EXERCISES.keys()), prompt="Select which Exercise", select_multiple=True)
+
+    for exercise in [EXERCISES.get(chosen_exercise) for chosen_exercise in chosen_exercises]:
         print(exercise.__name__)
         exercise()
 
