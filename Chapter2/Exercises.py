@@ -6,6 +6,7 @@ import matplotlib
 from typing import Callable
 import datetime
 from utils import input_utils
+from utils import data_utils
 import matplotlib.ticker as mticker
 from scipy import stats
 
@@ -29,7 +30,9 @@ def get_data(stock_names: list[str] | str = "") -> dict[str, pd.DataFrame]:
         data_path: Path = next((path for path in PATH_TO_STORED_DATA if stock_name_to_get in path.as_posix()), None)
         if data_path is None:
             continue
-        res[stock_name_to_get] = pd.read_csv(data_path)
+        res[stock_name_to_get] = pd.read_csv(data_path, dtype={
+            "Date": str, "Close/Last": str, "Volume": str, "Open": str, "High": str, "Low": str
+        })
 
     return res
 
@@ -220,15 +223,52 @@ def Exercise_5():
         part_func()
 
 
+def Exercise_6():
+
+    appl_data: pd.DataFrame = STOCK_DATA.get("APPL")[["Date", "Close/Last"]]
+    datas: dict[str, np.ndarray] = {k: pd.to_numeric(STOCK_DATA.get(k)["Close/Last"].str.removeprefix("$")) for k in data_utils.STOCK_NAMES}
+    datas_keys = list(datas.keys())
+    datas = {k: v / np.max(v) for k, v in datas.items()}
+    dataframe: pd.DataFrame = pd.DataFrame(datas, columns=datas_keys)
+
+    def part_a():
+        ndatas = len(datas)
+        correlation_matrix: np.ndarray = dataframe.corr().to_numpy()
+        correlation_matrix = np.flip(correlation_matrix, 0)
 
 
+        fig, ax = plt.subplots()
+        im = ax.imshow(correlation_matrix)
+        ax.set_xticks(range(ndatas), labels=datas.keys(),
+              rotation=45, ha="right", rotation_mode="anchor")
+        ax.set_yticks(range(ndatas), labels=datas.keys().__reversed__())
+        
+        for i in range(ndatas):
+           for j in range(ndatas):
+                text = ax.text(j, i, np.round(correlation_matrix[i, j], 2),
+                       ha="center", va="center", color="w")
+        ax.set_title("Cross Correlation of Several Stocks over 5 Years (Daily)")
+        fig.savefig(f"Chapter2/Plots/Cross Correlations 2.6a.png")
+
+    def part_b():
+        pass
+
+    parts: dict[str, Callable] = {
+        "a": part_a,
+        #"b": part_b,
+    }
+
+    for part, part_func in parts.items():
+        print(f"Part {part}")
+        part_func()
 
 EXERCISES: dict[str, Callable] = {
-        "Exercise_1": Exercise_1,
-        "Exercise_2": Exercise_2,
-        "Exercise_3": Exercise_3,
-        "Exercise_4": Exercise_4,
-        "Exercise_5": Exercise_5
+        "Exercise 1": Exercise_1,
+        "Exercise 2": Exercise_2,
+        "Exercise 3": Exercise_3,
+        "Exercise 4": Exercise_4,
+        "Exercise 5": Exercise_5,
+        "Exercise 6": Exercise_6
     }
 
 
